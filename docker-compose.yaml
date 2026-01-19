@@ -284,5 +284,23 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  source-postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: sourceuser
+      POSTGRES_PASSWORD: sourcepass
+      POSTGRES_DB: sourcedb
+    ports:
+      - "5433:5432"
+    volumes:
+      - source-postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "sourceuser"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+
 volumes:
   postgres-db-volume:
+  source-postgres-db-volume:
