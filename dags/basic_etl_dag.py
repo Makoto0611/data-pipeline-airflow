@@ -7,6 +7,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 import psycopg2
 import pandas as pd
+from sqlalchemy import create_engine
 
 # ========================================
 # Extract: PostgreSQLからデータを抽出
@@ -101,6 +102,65 @@ def transform_sales_data():
     print(transformed_df)
 
 # ========================================
+# Load: データをPostgreSQLに保存
+# ========================================
+# 役割: 集計データをsales_summaryテーブルに保存
+# 入力: /tmp/transformed_data.csv（Transform処理の出力）
+# 出力: PostgreSQLのsales_summaryテーブルにデータを格納
+# 
+# 保存方針:
+#   今回は「全データ置き換え」方式（if_exists='replace'）
+#   理由: シンプルで実装しやすく、学習に最適
+#   実務では「UPSERT」（既存データは更新、新規は追加）が望ましい
+#   ※UPSERTはPhase 3で学習予定
+def load_to_postgres():
+    # 1. Transform処理で作成したCSVを読み込む
+    # このCSVには日付別の集計データ（date, total_amount, product_count）が入っている
+    df = pd.read_csv('/tmp/transformed_data.csv')
+    print(f"Loading {len(df)} rows to PostgreSQL")
+    print("Data to load:")
+    print(df)
+    
+    # 2. PostgreSQLへの接続を作成
+    # SQLAlchemy: データベース接続を統一的に扱うライブラリ
+    # create_engine(): 接続情報からengineオブジェクトを作成
+    # 
+    # 接続文字列の形式: postgresql://ユーザー名:パスワード@ホスト:ポート/データベース名
+    # - sourceuser: PostgreSQLのユーザー名
+    # - sourcepass: パスワード
+    # - source-postgres: Dockerコンテナのサービス名（docker-compose.ymlで定義）
+    # - 5432: PostgreSQLのデフォルトポート
+    # - sourcedb: データベース名
+    engine = create_engine('postgresql://sourceuser:sourcepass@source-postgres:5432/sourcedb')
+    
+    # 3. データをPostgreSQLに保存
+    # df.to_sql(): pandasのDataFrameをSQLテーブルに保存
+    # 
+    # パラメータ説明:
+    # - 'sales_summary': 保存先のテーブル名
+    # - engine: PostgreSQL接続情報
+    # - if_exists='replace': テーブルが既に存在する場合の動作
+    #   * 'fail': エラーを出す（デフォルト）
+    #   * 'replace': テーブルを削除して作り直す（全データ置き換え）← 今回はこれ
+    #   * 'append': 既存データに追加（重複チェックなし）
+    # - index=False: pandasのインデックス（0,1,2...）をテーブルに含めない
+    # 
+    # 今回'replace'を選んだ理由:
+    #   - シンプルで確実にデータが更新される
+    #   - 集計データは毎回全て再計算するので、全置き換えでOK
+    #   - 欠点: 一瞬データが消える（実務では問題になる可能性）
+    # 
+    # より良い方法（Phase 3で学習）:
+    #   - UPSERT: 既存の日付は更新、新しい日付は追加
+    #   - トランザクション: エラー時はロールバック（元に戻す）
+    df.to_sql('sales_summary', engine, if_exists='replace', index=False)
+    
+    print(f"Successfully loaded {len(df)} rows to sales_summary table")
+    
+    # 4. 接続を閉じる（リソース解放）
+    engine.dispose()
+
+# ========================================
 # DAG定義
 # ========================================
 # DAG (Directed Acyclic Graph): タスクの実行順序を定義
@@ -128,7 +188,13 @@ with DAG(
         python_callable=transform_sales_data
     )
     
+    # タスク3: Load（データ保存）
+    load_task = PythonOperator(
+        task_id='load_to_postgres',
+        python_callable=load_to_postgres
+    )
+    
     # タスクの依存関係を定義（実行順序）
-    # extract_task >> transform_task: Extractが成功したらTransformを実行
-    # 実務では: extract_task >> transform_task >> load_task
-    extract_task >> transform_task
+    # extract_task >> transform_task >> load_task: Extract→Transform→Loadの順に実行
+    extract_task >> transform_task >> load_task
+
