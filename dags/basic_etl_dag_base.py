@@ -170,8 +170,9 @@ def load_to_postgres():
 # catchup: False=過去分を遡って実行しない
 with DAG(
     dag_id='basic_etl_pipeline',
+    default_args=default_args,  # エラーハンドリング設定を適用
     start_date=datetime(2026, 1, 20),
-    schedule=None,  # 手動実行（実務では '@daily' などを指定）
+    schedule='0 16 * * *',
     catchup=False,
     tags=['etl', 'postgres', 'bigquery']
 ) as dag:
