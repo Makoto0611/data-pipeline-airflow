@@ -69,8 +69,6 @@ def extract_from_postgres():
             port=5432
         )
         logger.info("Successfully connected to PostgreSQL")
-
-        query = "SELECT * FROM sales"
         
         # salesテーブルから全データを取得
         df = pd.read_sql(query, conn)
