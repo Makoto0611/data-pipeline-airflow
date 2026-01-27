@@ -22,6 +22,25 @@
 
 ---
 
+## 📚 ドキュメント
+
+### 仕様書・設計書
+- [DAG仕様書](docs/dag-specifications.md) - 4つのDAGの詳細仕様
+- [Phase 3完了レポート](docs/phase3-completion.md) - 学習成果とテスト結果
+
+### 各DAGの役割
+
+| DAG | 特徴 | 学習目的 |
+|-----|------|----------|
+| 01_base | シンプルなETL | ETLの基本構造 |
+| 02_error | エラー対策 | 本番環境で必要なエラーハンドリング |
+| 03_quality | 品質保証 | データ品質チェックの実装 |
+| 04_performance | 最適化 | パフォーマンス計測と改善 |
+
+詳細は [DAG仕様書](docs/dag-specifications.md) を参照してください。
+
+---
+
 ## 📚 ETLとは？
 
 **ETL = Extract（抽出）+ Transform（変換）+ Load（読み込み）**
@@ -148,16 +167,28 @@ date       | total_amount | product_count
 - [x] Airflow環境構築（Docker Compose）
 - [x] PostgreSQL環境準備（salesテーブル作成）
 - [x] Hello World DAG作成
-- [x] **Extract実装**（PostgreSQL → pandas）
+- [x] **Phase 2: 基本ETL実装**
+  - [x] Extract実装（PostgreSQL → pandas）
+  - [x] Transform実装（pandasでデータ加工）
+  - [x] Load実装（PostgreSQL へ保存）
+- [x] **Phase 3: フルスペックETL実装**
+  - [x] 01_basic_etl_dag_base.py（基本版）
+  - [x] 02_basic_etl_dag_error_handling.py（エラーハンドリング）
+  - [x] 03_basic_etl_dag_data_quality.py（データ品質チェック）
+  - [x] 04_basic_etl_dag_performance.py（パフォーマンス改善）
+  - [x] 総合テスト実施
+  - [x] ドキュメント作成
 
 ### 🔄 進行中
-- [ ] Transform実装（pandasでデータ加工）
-- [ ] Load実装（BigQuery へ送信）
+- [ ] **Phase 4: 監視・テスト・仕上げ**
+  - [ ] 監視・アラート設定
+  - [ ] テスト実装
+  - [ ] ドキュメント整備
+  - [ ] GitHub公開・ブログ執筆
 
 ### ⏸️ 未着手
-- [ ] エラーハンドリング
-- [ ] スケジュール設定
-- [ ] 監視・ログ設定
+- [ ] BigQueryへの実装
+- [ ] より大規模データでのテスト
 
 ---
 

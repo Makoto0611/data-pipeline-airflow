@@ -186,12 +186,11 @@ def load_to_postgres():
 # schedule: 実行スケジュール（None=手動実行のみ）
 # catchup: False=過去分を遡って実行しない
 with DAG(
-    dag_id='basic_etl_pipeline',
-    default_args=default_args,  # エラーハンドリング設定を適用
+    dag_id='basic_etl_pipeline_base',
     start_date=datetime(2026, 1, 20),
     schedule='0 16 * * *',
     catchup=False,
-    tags=['etl', 'postgres', 'bigquery']
+    tags=['etl', 'postgres', 'base']
 ) as dag:
     
     # タスク1: Extract（データ抽出）
