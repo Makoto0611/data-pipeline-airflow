@@ -216,3 +216,4 @@ with DAG(
     # extract_task >> transform_task >> load_task: Extract→Transform→Loadの順に実行
     extract_task >> transform_task >> load_task
 
+

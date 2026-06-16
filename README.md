@@ -91,6 +91,36 @@ BIツールで見られる場所に保存（Load）
 
 ---
 
+## 🚀 セットアップ・起動方法
+
+### 初回・2回目以降ともにこれだけでOK
+
+```bash
+chmod +x start.sh   # 初回のみ
+./start.sh
+```
+
+30秒ほど待ってから `http://localhost:8080` にアクセス（ユーザー名・パスワードはどちらも `airflow`）。
+
+### `start.sh` がやっていること（なぜ必要か）
+
+`docker-compose up -d` を直接叩くと、以下の理由で起動に失敗することがある（2026-06-16に実際に発生・原因調査済み）。
+
+1. **`AIRFLOW_UID` 未設定問題**: `.env` に `AIRFLOW_UID`（ホスト側のユーザーID）が無いと、`airflow-init` の `chown` が効かず、`logs`/`dags`/`plugins`/`config` が `root` 所有のまま残る。その結果、webserver/scheduler が `PermissionError: ... logs/scheduler` で起動失敗する。
+2. **フォルダ自動生成時の権限不備**: `logs` などのフォルダが存在しない状態で `docker-compose up` すると、Dockerがホスト側に自動でディレクトリを作るが、その際に実行権限（x）が無い中途半端なパーミッション（666など）で作られることがある。
+
+`start.sh` は `.env` に `AIRFLOW_UID` が無ければ追記し、`logs`/`dags`/`plugins`/`config` を事前に `mkdir -p` してから `docker-compose up -d` を実行することで、この2つを防いでいる。
+
+### うまく起動しない場合の確認コマンド
+
+```bash
+docker ps -a                                              # 各コンテナの状態確認
+docker logs data-pipeline-airflow-airflow-webserver-1     # webserverのエラー確認
+ls -la                                                    # logs/dags/plugins/config の所有者確認
+```
+
+---
+
 ## 🎓 このプロジェクトで学べること
 
 1. **ETLパイプラインの基本概念**
